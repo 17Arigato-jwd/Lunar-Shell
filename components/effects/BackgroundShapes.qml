@@ -20,6 +20,12 @@ Item {
     property list<real> lightOpacities: [0.34, 0.34, 0.08, 0.2]
     property list<real> darkOpacities: [0.16, 0.16, 0.04, 0.16]
 
+    // Whether the shapes should drift around. Defaults to mirroring the
+    // active media player (as on the dashboard's media tab), but callers
+    // embedding this purely as decoration (e.g. cheatsheet, clipboard) can
+    // pin it to false to always get the calm "nothing playing" look.
+    property bool drift: Players.active?.isPlaying ?? false
+
     function rand(min: real, max: real): real {
         return min + Math.random() * (max - min);
     }
@@ -38,7 +44,7 @@ Item {
     }
 
     FrameAnimation {
-        running: root.visible && root.width > 0 && root.height > 0 && (Players.active?.isPlaying ?? false)
+        running: root.visible && root.width > 0 && root.height > 0 && root.drift
         onTriggered: {
             const dt = frameTime;
             for (let i = 0; i < shapes.count; i++) {

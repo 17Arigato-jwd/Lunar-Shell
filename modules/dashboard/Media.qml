@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import M3Shapes
 import Caelestia.Config
 import qs.components
+import qs.components.effects
 import qs.services
 
 Item {
