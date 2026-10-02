@@ -3,10 +3,12 @@ import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.modules.bar as Bar
+import qs.modules.cheatsheet as Cheatsheet
 import qs.modules.dashboard as Dashboard
 import qs.modules.launcher as Launcher
 import qs.modules.notifications as Notifications
 import qs.modules.osd as Osd
+import qs.modules.overview as Overview
 import qs.modules.session as Session
 import qs.modules.sidebar as Sidebar
 import qs.modules.utilities as Utilities
@@ -28,6 +30,8 @@ Item {
     readonly property alias sessionWrapper: sessionWrapper
     readonly property alias launcher: launcher
     readonly property alias dashboard: dashboard
+    readonly property alias cheatsheet: cheatsheet
+    readonly property alias overview: overview
     readonly property alias popouts: popoutsWrapper.content
     readonly property alias popoutsWrapper: popoutsWrapper
     readonly property alias utilities: utilities
@@ -105,6 +109,34 @@ Item {
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
+    }
+
+    Cheatsheet.Wrapper {
+        id: cheatsheet
+
+        // Always sit below the session/power menu, regardless of declaration
+        // order elsewhere in this file.
+        z: -1
+
+        screen: root.screen
+        screenState: root.screenState
+        panels: root
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+    }
+
+    Overview.Wrapper {
+        id: overview
+
+        // Same principle as cheatsheet: never cover the session/power menu.
+        z: -1
+
+        screen: root.screen
+        screenState: root.screenState
+        panels: root
+
+        anchors.fill: parent
     }
 
     Dashboard.Wrapper {

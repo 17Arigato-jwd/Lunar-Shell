@@ -11,6 +11,8 @@ PersistentProperties {
     property bool dashboard
     property bool utilities
     property bool sidebar
+    property bool cheatsheet
+    property bool overview
 
     // Dashboard state
     property int dashboardTab

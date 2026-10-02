@@ -34,6 +34,18 @@ Region {
     }
 
     R {
+        panel: root.panels.cheatsheet
+        y: root.win.height - height
+        height: panel.height * (1 - root.panels.cheatsheet.offsetScale) + root.borderThickness
+    }
+
+    R {
+        panel: root.panels.overview
+        width: panel.width * panel.opacity
+        height: panel.height * panel.opacity
+    }
+
+    R {
         id: sessionRegion
 
         panel: root.panels.sessionWrapper

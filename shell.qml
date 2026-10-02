@@ -8,6 +8,9 @@ import "modules"
 import "modules/drawers"
 import "modules/background"
 import "modules/areapicker"
+import "modules/clipboard"
+import "modules/cheatsheet"
+import "modules/overview"
 import "modules/lock"
 import QtQuick
 import Quickshell
@@ -39,4 +42,7 @@ ShellRoot {
     IdleMonitors {
         lock: lock
     }
+    Clipboard {}
+    Cheatsheet {}
+    Overview {}
 }
