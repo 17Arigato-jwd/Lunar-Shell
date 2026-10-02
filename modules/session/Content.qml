@@ -21,32 +21,42 @@ Column {
 
     SessionButton {
         id: logout
-
         icon: Config.session.icons.logout
         command: Config.session.commands.logout
-
-        KeyNavigation.down: shutdown
-
+        KeyNavigation.up: windows_boot
+        KeyNavigation.down: lock_session
         Component.onCompleted: forceActiveFocus()
-
         Connections {
             function onLauncherChanged(): void {
                 if (!root.screenState.launcher)
                     logout.forceActiveFocus();
             }
-
             target: root.screenState
         }
     }
 
     SessionButton {
-        id: shutdown
-
-        icon: Config.session.icons.shutdown
-        command: Config.session.commands.shutdown
-
+        id: lock_session
+        icon: "lock"
+        command: ["loginctl", "lock-session"]
         KeyNavigation.up: logout
-        KeyNavigation.down: hibernate
+        KeyNavigation.down: screen_off
+    }
+
+    SessionButton {
+        id: screen_off
+        icon: "tv_off"
+        command: ["bash", "-c", "sleep 0.5 && hyprctl dispatch dpms off"]
+        KeyNavigation.up: lock_session
+        KeyNavigation.down: suspend_idle
+    }
+
+    SessionButton {
+        id: suspend_idle
+        icon: "bolt"
+        command: ["/home/varchas/scripts/suspend_idle.sh"]
+        KeyNavigation.up: screen_off
+        KeyNavigation.down: suspend_deep
     }
 
     AnimatedImage {
@@ -62,30 +72,51 @@ Column {
     }
 
     SessionButton {
-        id: hibernate
+        id: suspend_deep
+        icon: "sleep"
+        command: ["/home/varchas/scripts/suspend_deep.sh"]
+        KeyNavigation.up: suspend_idle
+        KeyNavigation.down: shutdown
+    }
 
-        icon: Config.session.icons.hibernate
-        command: Config.session.commands.hibernate
-
-        KeyNavigation.up: shutdown
+    SessionButton {
+        id: shutdown
+        icon: Config.session.icons.shutdown
+        command: Config.session.commands.shutdown
+        flushClipboard: true
+        KeyNavigation.up: suspend_deep
         KeyNavigation.down: reboot
     }
 
     SessionButton {
         id: reboot
-
         icon: Config.session.icons.reboot
         command: Config.session.commands.reboot
+        flushClipboard: true
+        KeyNavigation.up: shutdown
+        KeyNavigation.down: windows_boot
+    }
 
-        KeyNavigation.up: hibernate
+    SessionButton {
+        id: windows_boot
+        icon: "󰍲"
+        anchors.verticalCenterOffset: 2
+        command: ["bash", "-c", "sudo efibootmgr -n 0001 && systemctl reboot"]
+        flushClipboard: true
+        KeyNavigation.up: reboot
+        KeyNavigation.down: logout
     }
 
     component SessionButton: IconButton {
         id: button
 
         required property list<string> command
+        property bool flushClipboard: false
 
         function exec(): void {
+            root.screenState.session = false;
+            if (flushClipboard)
+                Quickshell.execDetached(["bash", `${Paths.home}/.config/hypr/scripts/clipboard-flush.sh`]);
             if (!SessionManager.exec(command))
                 Quickshell.execDetached(command);
         }
