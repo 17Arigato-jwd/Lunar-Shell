@@ -40,7 +40,7 @@ Scope {
             }
 
             if (!hibernateTimer.running && p <= GlobalConfig.general.battery.criticalLevel) {
-                Toaster.toast(qsTr("Hibernating in 5 seconds"), qsTr("Hibernating to prevent data loss"), "battery_android_alert", Toast.Error);
+                Toaster.toast(qsTr("Suspending in 5 seconds"), qsTr("Suspending to prevent data loss"), "battery_android_alert", Toast.Error);
                 hibernateTimer.start();
             }
         }
@@ -52,6 +52,9 @@ Scope {
         id: hibernateTimer
 
         interval: 5000
-        onTriggered: SessionManager.hibernate()
+        onTriggered: {
+            Quickshell.execDetached(["/home/varchas/scripts/suspend_deep.sh"]);
+            Quickshell.sh("sleep 1 && hyprctl dispatch dpms on");
+        }
     }
 }
