@@ -5,13 +5,14 @@ import Caelestia.Config
 import qs.components
 import qs.services
 
+// Background of one workspace. The window previews live in a separate layer
+// in Content.qml so they can animate between cells.
 StyledClippingRect {
     id: root
 
     required property int wsId
     required property bool isActive
-    required property var toplevels // array of { client, relX, relY, w, h }
-    required property real scaleF
+    required property int windowCount
     required property Item overviewRoot
     readonly property bool isDropTarget: overviewRoot.dragMoved && overviewRoot.dragHoverWsId === wsId && overviewRoot.dragHomeWsId !== wsId
 
@@ -25,50 +26,15 @@ StyledClippingRect {
     }
 
     StyledText {
-        visible: root.toplevels.length === 0
+        visible: root.windowCount === 0
         anchors.centerIn: parent
         text: root.wsId
         color: Colours.palette.m3outlineVariant
         font: Tokens.font.body.builders.large.size(48).weight(Font.Light).build()
     }
 
-    StyledRect {
-        visible: root.toplevels.length > 0
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.margins: 6
-        radius: Tokens.rounding.small
-        color: Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.85)
-        implicitWidth: wsLabel.implicitWidth + Tokens.padding.small * 2
-        implicitHeight: wsLabel.implicitHeight + Tokens.padding.extraSmall * 2
-        z: 10
-
-        StyledText {
-            id: wsLabel
-            anchors.centerIn: parent
-            text: root.wsId
-            color: Colours.palette.m3onSurfaceVariant
-            font: Tokens.font.label.small
-        }
-    }
-
     MouseArea {
         anchors.fill: parent
         onClicked: root.overviewRoot.onCellClicked(root.wsId)
-    }
-
-    Repeater {
-        model: root.toplevels
-        delegate: WindowThumb {
-            required property var modelData
-            entry: modelData
-            scaleF: root.scaleF
-            homeWsId: root.wsId
-            overviewRoot: root.overviewRoot
-            x: modelData.relX * root.scaleF
-            y: modelData.relY * root.scaleF
-            width: Math.max(1, modelData.w * root.scaleF)
-            height: Math.max(1, modelData.h * root.scaleF)
-        }
     }
 }

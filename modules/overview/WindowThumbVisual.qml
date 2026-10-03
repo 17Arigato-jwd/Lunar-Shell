@@ -13,11 +13,12 @@ ClippingRectangle {
     required property var client // HyprlandToplevel
     property bool active: true // gate live capture (perf: only while overview is open)
     property bool dim: false
+    property bool highlighted: false
 
     color: Colours.palette.m3surfaceContainerHigh
     radius: Tokens.rounding.small
-    border.width: 1
-    border.color: Colours.palette.m3outlineVariant
+    border.width: highlighted ? 2 : 1
+    border.color: highlighted ? Colours.palette.m3primary : Colours.palette.m3outlineVariant
     opacity: dim ? 0.35 : 1
 
     IconImage {
@@ -34,5 +35,19 @@ ClippingRectangle {
 
         constraintSize.width: root.width
         constraintSize.height: root.height
+    }
+
+    // Hover tint, drawn above the live capture
+    Rectangle {
+        anchors.fill: parent
+        radius: root.radius
+        color: Colours.palette.m3primary
+        opacity: root.highlighted ? 0.12 : 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 120
+            }
+        }
     }
 }
