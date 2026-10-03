@@ -54,7 +54,7 @@ Column {
     SessionButton {
         id: suspend_idle
         icon: "bolt"
-        command: ["/home/varchas/scripts/suspend_idle.sh"]
+        command: [`${Paths.home}/scripts/suspend_idle.sh`]
         KeyNavigation.up: screen_off
         KeyNavigation.down: suspend_deep
     }
@@ -74,7 +74,7 @@ Column {
     SessionButton {
         id: suspend_deep
         icon: "sleep"
-        command: ["/home/varchas/scripts/suspend_deep.sh"]
+        command: [`${Paths.home}/scripts/suspend_deep.sh`]
         KeyNavigation.up: suspend_idle
         KeyNavigation.down: shutdown
     }
@@ -116,7 +116,7 @@ Column {
         function exec(): void {
             root.screenState.session = false;
             if (flushClipboard)
-                Quickshell.execDetached(["bash", `${Paths.home}/.config/hypr/scripts/clipboard-flush.sh`]);
+                Quickshell.execDetached(["bash", `${Paths.home}/scripts/clipboard-flush.sh`]);
             if (!SessionManager.exec(command))
                 Quickshell.execDetached(command);
         }

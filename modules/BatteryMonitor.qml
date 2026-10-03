@@ -1,3 +1,4 @@
+import qs.utils
 import QtQuick
 import Quickshell
 import Quickshell.Services.UPower
@@ -53,7 +54,7 @@ Scope {
 
         interval: 5000
         onTriggered: {
-            Quickshell.execDetached(["/home/varchas/scripts/suspend_deep.sh"]);
+            Quickshell.execDetached([`${Paths.home}/scripts/suspend_deep.sh`]);
             Quickshell.sh("sleep 1 && hyprctl dispatch dpms on");
         }
     }
