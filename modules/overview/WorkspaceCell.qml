@@ -61,7 +61,7 @@ StyledClippingRect {
         model: root.toplevels
         delegate: WindowThumb {
             required property var modelData
-            data: modelData
+            entry: modelData
             scaleF: root.scaleF
             homeWsId: root.wsId
             overviewRoot: root.overviewRoot
@@ -69,33 +69,6 @@ StyledClippingRect {
             y: modelData.relY * root.scaleF
             width: Math.max(1, modelData.w * root.scaleF)
             height: Math.max(1, modelData.h * root.scaleF)
-        }
-    }
-
-    // TEMPORARY DIAGNOSTIC - remove once thumbnails are confirmed working.
-    // Plain Text (not StyledText) deliberately, so it renders regardless of
-    // any theming/token issue, in a colour that can't be mistaken for
-    // anything else in the UI.
-    Column {
-        visible: root.toplevels.length > 0
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 4
-        z: 999
-        spacing: 0
-
-        Repeater {
-            model: root.toplevels
-            delegate: Text {
-                required property var modelData
-                required property int index
-                text: `[${index}] rX=${Math.round(modelData.relX)} rY=${Math.round(modelData.relY)} w=${Math.round(modelData.w)} h=${Math.round(modelData.h)} cl=${modelData.client ? "Y" : "N"} wl=${modelData.client && modelData.client.wayland ? "Y" : "N"}`
-                color: "#ff2d55"
-                font.pixelSize: 10
-                font.family: "monospace"
-                style: Text.Outline
-                styleColor: "white"
-            }
         }
     }
 }

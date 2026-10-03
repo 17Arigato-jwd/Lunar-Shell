@@ -2,26 +2,54 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
+// One window preview inside a workspace cell. Position and size are set by
+// the delegate in WorkspaceCell.qml. Left-drag moves the window to another
+// workspace (state machine lives in Content.qml), a plain click focuses it,
+// right-click opens the context menu.
 Item {
     id: root
 
-    required property var data // { client, relX, relY, w, h }
+    // Not called "data": that is Item's default property, and redeclaring it
+    // would stop child items from being attached.
+    required property var entry // { client, relX, relY, w, h }
     required property real scaleF
     required property int homeWsId
     required property Item overviewRoot
 
-    // TEMPORARY DIAGNOSTIC - x/y/width/height deliberately NOT set here.
-    // WorkspaceCell.qml's delegate instantiation now sets them externally
-    // instead (matching the pattern already proven to work for
-    // WorkspaceCell itself, which gets width/height assigned externally
-    // by Content.qml rather than computing them from its own required
-    // properties).
+    readonly property bool beingDragged: overviewRoot.dragThumb === entry && overviewRoot.dragMoved
 
-    Rectangle {
+    WindowThumbVisual {
         anchors.fill: parent
-        color: "lime"
-        opacity: 0.5
-        border.width: 2
-        border.color: "red"
+
+        client: root.entry.client
+        active: root.overviewRoot.active
+        dim: root.beingDragged
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        preventStealing: true
+
+        function toOverview(mouse: var): point {
+            return mapToItem(root.overviewRoot, mouse.x, mouse.y);
+        }
+
+        onPressed: mouse => {
+            if (mouse.button === Qt.LeftButton)
+                root.overviewRoot.beginDrag(root.entry, root.homeWsId, toOverview(mouse));
+        }
+        onPositionChanged: mouse => {
+            if (pressedButtons & Qt.LeftButton)
+                root.overviewRoot.updateDrag(toOverview(mouse));
+        }
+        onReleased: mouse => {
+            if (mouse.button === Qt.LeftButton)
+                root.overviewRoot.endDrag(toOverview(mouse));
+        }
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton)
+                root.overviewRoot.openContextMenu(root, root.entry.client, root.homeWsId);
+        }
     }
 }
