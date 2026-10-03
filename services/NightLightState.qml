@@ -14,8 +14,8 @@ Singleton {
 
     property bool active: false
     property int temp: 4000
-    // Position of temp inside the range, 0..1
-    readonly property real fraction: (temp - minTemp) / (maxTemp - minTemp)
+    // Slider position, 0..1: 0 = no filter (maxTemp), 1 = strongest (minTemp)
+    readonly property real fraction: (maxTemp - temp) / (maxTemp - minTemp)
 
     function toggle(): void {
         if (active) {
@@ -34,7 +34,7 @@ Singleton {
     }
 
     function setFraction(f: real): void {
-        setTemp(minTemp + f * (maxTemp - minTemp));
+        setTemp(maxTemp - f * (maxTemp - minTemp));
     }
 
     // Pick up a hyprsunset that is already running (shell reload, started elsewhere)
