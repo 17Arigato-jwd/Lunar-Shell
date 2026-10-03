@@ -69,10 +69,10 @@ StyledWindow {
 
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) || screenState.overview || screenState.cheatsheet ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: screenState.launcher || screenState.session || screenState.cheatsheet || screenState.overview ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-    mask: hasFullscreen ? emptyRegion : regions
+    mask: hasFullscreen && !screenState.overview && !screenState.cheatsheet ? emptyRegion : regions
 
     anchors.top: true
     anchors.bottom: true

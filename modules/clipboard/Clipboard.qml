@@ -43,12 +43,21 @@ Scope {
     readonly property var filtered: {
         const q = query.toLowerCase();
         const list = entries.filter(e => e.preview.toLowerCase().includes(q));
-        // Pinned entries float to the top; otherwise preserve cliphist order
-        return list.slice().sort((a, b) => {
-            const pa = root.pinned.includes(a.preview) ? 0 : 1;
-            const pb = root.pinned.includes(b.preview) ? 0 : 1;
-            return pa - pb;
-        });
+        // Pinned entries first, then newest first. cliphist ids only ever
+        // grow, so the id is the copy order; the original index is the last
+        // tie-break so the result never depends on the sort being stable.
+        return list.map((e, i) => ({
+                    e,
+                    i
+                })).sort((a, b) => {
+            const pa = root.pinned.includes(a.e.preview) ? 0 : 1;
+            const pb = root.pinned.includes(b.e.preview) ? 0 : 1;
+            if (pa !== pb)
+                return pa - pb;
+            if (a.e.id !== b.e.id)
+                return b.e.id - a.e.id;
+            return a.i - b.i;
+        }).map(x => x.e);
     }
 
     // The screen state currently focused - used purely to stay out of the
@@ -100,6 +109,17 @@ Scope {
         proc.destPath = path;
         proc.command = ["sh", "-c", `mkdir -p ${shQuote(Paths.clipboardimagecache)} && printf '%s' "$1" | cliphist decode > ${shQuote(path)}`, "_", entry.line];
         proc.running = true;
+    }
+
+    // Saves an image entry to ~/Pictures/Copied (created on first use).
+    property string savedId: ""
+
+    function saveImage(entry: var): void {
+        if (!entry.isImage || saveProc.running)
+            return;
+        saveProc.entryId = `${entry.id}`;
+        saveProc.command = ["sh", "-c", 'dir="$HOME/Pictures/Copied"; mkdir -p "$dir" || exit 1; f="$dir/clip-$(date +%Y%m%d-%H%M%S)-$2.$3"; printf \'%s\' "$1" | cliphist decode > "$f" || { rm -f "$f"; exit 1; }', "_", entry.line, `${entry.id}`, extFor(entry.format)];
+        saveProc.running = true;
     }
 
     function refresh(): void {
@@ -216,6 +236,26 @@ Scope {
 
     Process {
         id: copyProc
+    }
+
+    Process {
+        id: saveProc
+
+        property string entryId: ""
+
+        onExited: exitCode => {
+            if (exitCode === 0) {
+                root.savedId = entryId;
+                savedTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: savedTimer
+
+        interval: 1800
+        onTriggered: root.savedId = ""
     }
 
     Process {
@@ -520,6 +560,16 @@ Scope {
                                     text: "content_copy"
                                     color: Colours.palette.m3onSurfaceVariant
                                     fontStyle: Tokens.font.icon.small
+                                }
+
+                                IconButton {
+                                    visible: delegateRoot.modelData.isImage
+                                    implicitWidth: 26
+                                    implicitHeight: 26
+                                    type: IconButton.Text
+                                    icon: root.savedId === `${delegateRoot.modelData.id}` ? "check" : "download"
+
+                                    onClicked: root.saveImage(delegateRoot.modelData)
                                 }
 
                                 IconButton {
