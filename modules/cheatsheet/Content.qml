@@ -20,40 +20,7 @@ Item {
     readonly property int padding: Tokens.padding.extraLarge
     readonly property int rounding: Tokens.rounding.extraLarge
 
-    readonly property var sections: [
-        { title: "Apps & shell", icon: "apps", binds: [
-            { keys: ["Super", "Q"], desc: "Terminal" },
-            { keys: ["Super", "E"], desc: "File manager" },
-            { keys: ["Copilot"], desc: "Launcher" },
-            { keys: ["Super", "N"], desc: "Notification sidebar" },
-            { keys: ["Power"], desc: "Session menu" }
-        ] },
-        { title: "Window", icon: "desktop_windows", binds: [
-            { keys: ["Super", "C"], desc: "Close window" },
-            { keys: ["Super", "F"], desc: "Fullscreen" },
-            { keys: ["Super", "V"], desc: "Float toggle" },
-            { keys: ["Super", "P"], desc: "Pseudotile" },
-            { keys: ["Super", "M"], desc: "Exit Hyprland" },
-            { keys: ["Alt", "Tab"], desc: "Cycle windows" }
-        ] },
-        { title: "Move & resize", icon: "open_with", binds: [
-            { keys: ["Super", "Shift", "←→↑↓"], desc: "Move window" },
-            { keys: ["Super", "Drag"], desc: "Move with mouse" },
-            { keys: ["Super", "R-Drag"], desc: "Resize with mouse" }
-        ] },
-        { title: "Workspaces", icon: "dashboard", binds: [
-            { keys: ["Super", "1–0"], desc: "Switch workspace" },
-            { keys: ["Super", "Shift", "1–5"], desc: "Send window to ws" }
-        ] },
-        { title: "Screenshot", icon: "screenshot_monitor", binds: [
-            { keys: ["Print"], desc: "Whole screen → clipboard" },
-            { keys: ["Super", "Shift", "S"], desc: "Region → clipboard" }
-        ] },
-        { title: "Tools", icon: "build", binds: [
-            { keys: ["Super", "Shift", "A"], desc: "This cheat sheet" },
-            { keys: ["Super", "Shift", "V"], desc: "Clipboard history" }
-        ] }
-    ]
+    readonly property var sections: HyprBinds.sections
 
     implicitWidth: targetWidth
     width: targetWidth

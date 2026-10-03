@@ -15,6 +15,8 @@ import qs.services
 Scope {
     id: root
 
+    Component.onCompleted: HyprBinds.refresh()
+
     function toggle(): void {
         const state = ShellState.forActive();
         if (state)
