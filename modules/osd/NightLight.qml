@@ -1,41 +1,40 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.components.controls
+import qs.services
 
-// Night light toggle for the OSD. Hovering for 5 seconds reveals a colour
-// temperature slider (0-100 maps to 2500K-6500K).
+// Night light toggle for the OSD. While the night light is on, hovering the
+// button reveals a colour temperature slider (drag or scroll to change it).
 Item {
     id: root
 
-    property bool isActive: false
-    property real currentTemp: 4000
+    property int hoverDelay: 800
 
-    function applyTemp(temp: real): void {
-        Quickshell.execDetached(["hyprsunset", "-t", String(Math.round(temp))]);
+    readonly property bool wantSlider: NightLightState.active && hover.hovered
+
+    onWantSliderChanged: {
+        if (wantSlider) {
+            hoverTimer.restart();
+        } else {
+            hoverTimer.stop();
+            tempSliderLoader.shouldBeActive = false;
+        }
     }
 
     implicitWidth: layout.implicitWidth
     implicitHeight: layout.implicitHeight
 
     HoverHandler {
-        onHoveredChanged: {
-            if (hovered) {
-                hoverTimer.start();
-            } else {
-                hoverTimer.stop();
-                tempSliderLoader.shouldBeActive = false;
-            }
-        }
+        id: hover
     }
 
     Timer {
         id: hoverTimer
 
-        interval: 5000
-        onTriggered: tempSliderLoader.shouldBeActive = true
+        interval: root.hoverDelay
+        onTriggered: tempSliderLoader.shouldBeActive = root.wantSlider
     }
 
     ColumnLayout {
@@ -49,25 +48,15 @@ Item {
             implicitWidth: Tokens.sizes.osd.sliderWidth
             implicitHeight: Tokens.sizes.osd.sliderWidth
 
-            icon: root.isActive ? "brightness_3" : "dark_mode"
+            icon: NightLightState.active ? "brightness_3" : "dark_mode"
             font: Tokens.font.icon.builders.large.scale(0.85).build()
             radius: Tokens.rounding.large
 
-            // Darker backdrop while the night light is off
-            Rectangle {
-                z: -1
-                anchors.fill: parent
-                radius: parent.radius
-                color: root.isActive ? "transparent" : Qt.rgba(0, 0, 0, 0.4)
-            }
+            // Off: no background, light glyph. On: filled.
+            inactiveColour: NightLightState.active ? Colours.palette.m3primary : "transparent"
+            inactiveOnColour: NightLightState.active ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
 
-            onClicked: {
-                root.isActive = !root.isActive;
-                if (root.isActive)
-                    root.applyTemp(root.currentTemp);
-                else
-                    Quickshell.execDetached(["pkill", "hyprsunset"]);
-            }
+            onClicked: NightLightState.toggle()
         }
 
         WrappedLoader {
@@ -78,29 +67,21 @@ Item {
             sourceComponent: CustomMouseArea {
                 function onWheel(event: WheelEvent) {
                     if (event.angleDelta.y > 0)
-                        tempSlider.value = Math.min(tempSlider.to, tempSlider.value + 5);
+                        NightLightState.setFraction(NightLightState.fraction + 0.05);
                     else if (event.angleDelta.y < 0)
-                        tempSlider.value = Math.max(tempSlider.from, tempSlider.value - 5);
+                        NightLightState.setFraction(NightLightState.fraction - 0.05);
                 }
 
                 implicitWidth: Tokens.sizes.osd.sliderWidth
                 implicitHeight: Tokens.sizes.osd.sliderHeight
 
                 FilledSlider {
-                    id: tempSlider
-
                     anchors.fill: parent
 
                     icon: "thermostat"
-                    from: 0
-                    to: 100
-                    value: 37.5 // 4000K
+                    value: NightLightState.fraction
 
-                    onMoved: {
-                        root.currentTemp = 2500 + (value / 100) * 4000;
-                        if (root.isActive)
-                            root.applyTemp(root.currentTemp);
-                    }
+                    onMoved: NightLightState.setFraction(value)
                 }
             }
         }
