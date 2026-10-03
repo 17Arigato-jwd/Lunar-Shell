@@ -1,5 +1,6 @@
 import "performance"
 import QtQuick
+import Quickshell
 import QtQuick.Layouts
 import Quickshell.Services.UPower
 import Caelestia.Config
