@@ -79,6 +79,11 @@ Item {
             }
         }
 
+        // Night light (see NightLight.qml)
+        NightLight {
+            Layout.alignment: Qt.AlignHCenter
+        }
+
         // Brightness
         WrappedLoader {
             shouldBeActive: Config.osd.enableBrightness
