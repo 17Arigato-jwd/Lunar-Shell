@@ -1,9 +1,12 @@
 import "dash"
+import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
+import qs.components.controls
 import qs.components.filedialog
 import qs.services
+import qs.utils
 
 GridLayout {
     id: root
@@ -14,7 +17,9 @@ GridLayout {
     rowSpacing: Tokens.spacing.medium
     columnSpacing: Tokens.spacing.medium
 
+    // USER COMPONENT
     Rect {
+        Layout.row: 0
         Layout.column: 2
         Layout.columnSpan: 3
         Layout.preferredWidth: Tokens.sizes.dashboard.userWidth
@@ -30,31 +35,71 @@ GridLayout {
         }
     }
 
-    Rect {
+    // ROW 0: NAS BUTTON + WEATHER WIDGET
+    RowLayout {
         Layout.row: 0
+        Layout.column: 0
         Layout.columnSpan: 2
-        Layout.preferredWidth: Tokens.sizes.dashboard.weatherWidth
         Layout.preferredHeight: weather.implicitHeight
+        spacing: Tokens.spacing.medium
 
-        radius: Tokens.rounding.extraLarge * 1.5
+        ServiceToggle {
+            // Same width as the clock container below
+            Layout.preferredWidth: dateTime.implicitWidth
+            Layout.fillHeight: true
 
-        SmallWeather {
-            id: weather
+            icon: "storage"
+            statusScript: "mount | grep -q '/mnt/ATPBR-Data' && echo ON || echo OFF"
+            toggleScript: `${Paths.home}/scripts/mount_nas.sh`
+        }
+
+        Rect {
+            Layout.preferredWidth: Tokens.sizes.dashboard.weatherWidth
+            Layout.fillHeight: true
+
+            radius: Tokens.rounding.extraLarge * 1.5
+
+            SmallWeather {
+                id: weather
+            }
         }
     }
 
-    Rect {
+    // ROW 1: CLOCK + TAILSCALE BUTTON
+    ColumnLayout {
         Layout.row: 1
+        Layout.column: 0
         Layout.preferredWidth: dateTime.implicitWidth
+        Layout.maximumWidth: dateTime.implicitWidth
         Layout.fillHeight: true
 
-        radius: Tokens.rounding.large
+        implicitWidth: dateTime.implicitWidth
+        spacing: Tokens.spacing.medium
 
-        DateTime {
-            id: dateTime
+        Rect {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            radius: Tokens.rounding.large
+
+            DateTime {
+                id: dateTime
+
+                anchors.centerIn: parent
+            }
+        }
+
+        ServiceToggle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Tokens.sizes.session.button
+
+            icon: "home"
+            statusScript: "tailscale status | grep -q 'stopped' && echo OFF || echo ON"
+            toggleScript: `${Paths.home}/scripts/tailscale_toggle.sh`
         }
     }
 
+    // CALENDAR
     Rect {
         Layout.row: 1
         Layout.column: 1
@@ -71,6 +116,7 @@ GridLayout {
         }
     }
 
+    // RESOURCES
     Rect {
         Layout.row: 1
         Layout.column: 4
@@ -84,6 +130,7 @@ GridLayout {
         }
     }
 
+    // MEDIA PLAYER
     Rect {
         Layout.row: 0
         Layout.column: 5
