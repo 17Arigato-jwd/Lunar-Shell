@@ -29,6 +29,7 @@ Singleton {
             "Special workspaces": "layers",
             "Screenshot": "screenshot_monitor",
             "Tools": "build",
+            "Magnifier": "zoom_in",
             "Hardware keys": "keyboard",
             "No description": "help"
         })
