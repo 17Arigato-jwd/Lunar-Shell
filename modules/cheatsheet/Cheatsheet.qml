@@ -7,6 +7,7 @@
 //  `qs -c caelestia ipc call cheatsheet toggle` and the "cheatsheet"
 //  CustomShortcut both still work unchanged.
 
+import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.components.misc

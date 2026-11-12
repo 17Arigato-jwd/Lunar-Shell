@@ -139,6 +139,7 @@ Item {
         }
 
         root.syncThumbs(list);
+        root.checkSettle();
     }
 
     // After we change something, Hyprland needs a moment to report it back.
@@ -157,6 +158,17 @@ Item {
         id: lateTimer
         interval: 600
         onTriggered: root.refreshData()
+    }
+
+    // If Hyprland never reports the swap, let the thumbnails fall back to reality.
+    Timer {
+        id: settleTimeout
+        interval: 1500
+        onTriggered: {
+            ghostAnim.stop();
+            root.ghostSettling = false;
+            root.settle = null;
+        }
     }
 
     Timer {
@@ -358,6 +370,70 @@ Item {
         root.refreshSoon();
     }
 
+    function thumbRow(address: string): var {
+        for (let i = 0; i < thumbModel.count; i++) {
+            if (thumbModel.get(i).address === address)
+                return thumbModel.get(i);
+        }
+        return null;
+    }
+
+    // Start the glide: the ghost flies from where it was dropped into the other
+    // window's slot; the thumbnails switch to their swapped geometry right away.
+    function beginSettle(a: var, bAddr: string): void {
+        const b = root.thumbRow(bAddr);
+        if (!a || !b)
+            return;
+        const origin = root.cellOrigin(root.dragHomeWsId);
+        root.settle = {
+            a: a.address,
+            b: bAddr,
+            aGeo: {
+                relX: a.relX,
+                relY: a.relY,
+                w: a.w,
+                h: a.h
+            },
+            bGeo: {
+                relX: b.relX,
+                relY: b.relY,
+                w: b.w,
+                h: b.h
+            }
+        };
+        ghostAnim.toX = origin.x + b.relX * root.scaleF;
+        ghostAnim.toY = origin.y + b.relY * root.scaleF;
+        ghostAnim.toW = b.w * root.scaleF;
+        ghostAnim.toH = b.h * root.scaleF;
+        root.ghostSettling = true;
+        ghostAnim.restart();
+        settleTimeout.restart();
+    }
+
+    function cancelSettle(): void {
+        ghostAnim.stop();
+        settleTimeout.stop();
+        root.ghostSettling = false;
+        root.settle = null;
+    }
+
+    // Drop the held geometry once Hyprland's layout matches it (and the ghost has landed)
+    function checkSettle(): void {
+        if (!root.settle || root.ghostSettling)
+            return;
+        const a = root.thumbRow(root.settle.a);
+        const b = root.thumbRow(root.settle.b);
+        if (!a || !b) {
+            root.cancelSettle();
+            return;
+        }
+        const near = (row, g) => Math.abs(row.relX - g.relX) < 2 && Math.abs(row.relY - g.relY) < 2 && Math.abs(row.w - g.w) < 2 && Math.abs(row.h - g.h) < 2;
+        if (near(a, root.settle.bGeo) && near(b, root.settle.aGeo)) {
+            settleTimeout.stop();
+            root.settle = null;
+        }
+    }
+
     function dumpWorkspace(fromWs: int, toWs: int): void {
         const addrs = Hypr.toplevels.values.filter(t => t.workspace?.id === fromWs).map(t => t.address);
         for (const addr of addrs)
@@ -404,6 +480,18 @@ Item {
     property bool dragMoved: false
     property point dragPointer: Qt.point(0, 0)
     property string swapTarget: "" // address of the tiled window the dragged one would swap with
+
+    // Swap drop: the drag ghost glides into the other window's slot while the two
+    // thumbnails hold their swapped positions until Hyprland reports the new layout.
+    property var settle: null // { a, b, aGeo, bGeo } - a took b's slot, b took a's
+    property bool ghostSettling: false
+    property var ghostClient: null
+    property real ghostX: 0
+    property real ghostY: 0
+    property real ghostW: 0
+    property real ghostH: 0
+    readonly property var swapA: settle ? settle.aGeo : (swapTarget !== "" ? dragThumb : null)
+    readonly property string swapBAddr: settle ? settle.b : swapTarget
     readonly property var dragHoverWsId: dragThumb && dragMoved ? root.wsIdAtPoint(Qt.point(dragPos.x + dragThumb.w * scaleF / 2, dragPos.y + dragThumb.h * scaleF / 2)) : null
 
     function beginDrag(data: var, homeWsId: int, pt: point): void {
@@ -418,6 +506,12 @@ Item {
         root.dragStartPt = pt;
         root.dragPointer = pt;
         root.swapTarget = "";
+        root.cancelSettle();
+        root.ghostClient = data.client;
+        root.ghostX = itemX;
+        root.ghostY = itemY;
+        root.ghostW = data.w * root.scaleF;
+        root.ghostH = data.h * root.scaleF;
         root.dragMoved = false;
     }
 
@@ -428,6 +522,8 @@ Item {
             root.dragMoved = true;
         root.dragPos = Qt.point(pt.x - root.dragPressOffset.x, pt.y - root.dragPressOffset.y);
         root.dragPointer = pt;
+        root.ghostX = root.dragPos.x;
+        root.ghostY = root.dragPos.y;
         root.swapTarget = root.dragMoved ? root.swapTargetAt(pt) : "";
     }
 
@@ -443,6 +539,7 @@ Item {
             const floating = client?.lastIpcObject?.floating === true;
             if (root.swapTarget !== "") {
                 // Dropped on another tiled window of the same workspace: swap places.
+                root.beginSettle(root.dragThumb, root.swapTarget);
                 root.swapClients(client, root.clientFor(root.swapTarget));
             } else if (targetWs !== null) {
                 if (targetWs !== root.dragHomeWsId)
@@ -703,12 +800,14 @@ Item {
                     overviewRoot: root
                     // While a tiled window is dragged over this one, this one slides
                     // into the dragged window's slot - exactly what a swap would do.
-                    readonly property bool takesDraggedSlot: root.swapTarget !== "" && address === root.swapTarget
+                    readonly property bool takesDraggedSlot: root.swapBAddr !== "" && address === root.swapBAddr
+                    // ...and the dragged one takes this one's slot once it has been dropped.
+                    readonly property bool takesTargetSlot: root.settle !== null && address === root.settle.a
 
-                    x: root.cellLocal(wsId).x + (takesDraggedSlot ? root.dragThumb.relX : relX) * root.scaleF
-                    y: root.cellLocal(wsId).y + (takesDraggedSlot ? root.dragThumb.relY : relY) * root.scaleF
-                    width: Math.max(1, (takesDraggedSlot ? root.dragThumb.w : w) * root.scaleF)
-                    height: Math.max(1, (takesDraggedSlot ? root.dragThumb.h : h) * root.scaleF)
+                    x: root.cellLocal(wsId).x + (takesDraggedSlot ? root.swapA.relX : takesTargetSlot ? root.settle.bGeo.relX : relX) * root.scaleF
+                    y: root.cellLocal(wsId).y + (takesDraggedSlot ? root.swapA.relY : takesTargetSlot ? root.settle.bGeo.relY : relY) * root.scaleF
+                    width: Math.max(1, (takesDraggedSlot ? root.swapA.w : takesTargetSlot ? root.settle.bGeo.w : w) * root.scaleF)
+                    height: Math.max(1, (takesDraggedSlot ? root.swapA.h : takesTargetSlot ? root.settle.bGeo.h : h) * root.scaleF)
                 }
             }
 
@@ -754,19 +853,62 @@ Item {
         opacity: 0.6
     }
 
-    // Window being dragged
+    // Window being dragged; after a swap drop it glides into its new slot
     Loader {
-        active: root.dragThumb !== null && root.dragMoved
+        active: (root.dragThumb !== null && root.dragMoved) || root.ghostSettling
         z: 1000
-        x: root.dragPos.x
-        y: root.dragPos.y
-        width: root.dragThumb ? root.dragThumb.w * root.scaleF : 0
-        height: root.dragThumb ? root.dragThumb.h * root.scaleF : 0
+        x: root.ghostX
+        y: root.ghostY
+        width: root.ghostW
+        height: root.ghostH
 
         sourceComponent: WindowThumbVisual {
-            client: root.dragThumb?.client ?? null
+            client: root.ghostClient
             active: root.active
             opacity: 0.9
+        }
+    }
+
+    ParallelAnimation {
+        id: ghostAnim
+
+        property real toX: 0
+        property real toY: 0
+        property real toW: 0
+        property real toH: 0
+
+        NumberAnimation {
+            target: root
+            property: "ghostX"
+            to: ghostAnim.toX
+            duration: 230
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "ghostY"
+            to: ghostAnim.toY
+            duration: 230
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "ghostW"
+            to: ghostAnim.toW
+            duration: 230
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "ghostH"
+            to: ghostAnim.toH
+            duration: 230
+            easing.type: Easing.OutCubic
+        }
+
+        onFinished: {
+            root.ghostSettling = false;
+            root.checkSettle();
         }
     }
 

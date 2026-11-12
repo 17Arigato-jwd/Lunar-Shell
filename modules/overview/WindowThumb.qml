@@ -24,8 +24,9 @@ Item {
 
     readonly property bool beingDragged: overviewRoot.dragAddress === address && overviewRoot.dragMoved
 
-    // While swapping, the dragged window's old slot is taken over by the other window
-    opacity: beingDragged && overviewRoot.swapTarget !== "" ? 0 : 1
+    // Hidden while its drag ghost stands in for it: during the swap preview, and
+    // while the ghost glides into place after the drop.
+    opacity: (beingDragged && overviewRoot.swapTarget !== "") || (overviewRoot.ghostSettling && overviewRoot.settle !== null && overviewRoot.settle.a === address) ? 0 : 1
 
     Behavior on opacity {
         NumberAnimation {

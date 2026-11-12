@@ -30,6 +30,12 @@ ShellRoot {
     GSFLoader {}
 
     Background {}
+
+
+    // CAELESTIA-NOTES-WIDGET BEGIN
+    DesktopNotes {}
+    // CAELESTIA-NOTES-WIDGET END
+
     Drawers {}
     AreaPicker {}
     Lock {
